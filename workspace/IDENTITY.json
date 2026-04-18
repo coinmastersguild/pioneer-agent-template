@@ -1,0 +1,55 @@
+{
+  "$schema": "https://aieos.org/schema/v1.1.json",
+  "identity": {
+    "names": {
+      "first": "",
+      "last": "",
+      "nickname": "",
+      "full": ""
+    },
+    "bio": "",
+    "origin": "",
+    "residence": ""
+  },
+  "psychology": {
+    "mbti": "",
+    "ocean": {
+      "openness": 0.5,
+      "conscientiousness": 0.5,
+      "extraversion": 0.5,
+      "agreeableness": 0.5,
+      "neuroticism": 0.3
+    },
+    "moral_compass": []
+  },
+  "linguistics": {
+    "style": "",
+    "formality": "",
+    "catchphrases": [],
+    "forbidden_words": []
+  },
+  "motivations": {
+    "core_drive": "",
+    "short_term_goals": [],
+    "long_term_goals": [],
+    "fears": []
+  },
+  "capabilities": {
+    "skills": [],
+    "tools": []
+  },
+  "physicality": {
+    "appearance": "",
+    "avatar_description": ""
+  },
+  "history": {
+    "origin_story": "",
+    "education": [],
+    "occupation": ""
+  },
+  "interests": {
+    "hobbies": [],
+    "favorites": [],
+    "lifestyle": []
+  }
+}

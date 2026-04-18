@@ -1,0 +1,75 @@
+name: validate-config
+
+on:
+  pull_request:
+    paths:
+      - 'config.toml.example'
+      - 'tools.d/**'
+      - 'workspace/IDENTITY.json'
+      - '.env.example'
+  push:
+    branches: [main, master, develop]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toml validator
+        run: pip install tomli tomli-w
+
+      - name: Validate config.toml.example
+        run: |
+          python - <<'PY'
+          import tomli, sys
+          with open("config.toml.example","rb") as f:
+              tomli.load(f)
+          print("config.toml.example: OK")
+          PY
+
+      - name: Validate tools.d/*.toml
+        run: |
+          python - <<'PY'
+          import tomli, glob, sys
+          names = {}
+          ok = True
+          for path in sorted(glob.glob("tools.d/*.toml")):
+              with open(path,"rb") as f:
+                  data = tomli.load(f)
+              for t in data.get("http_tools", []):
+                  n = t.get("name")
+                  if not n:
+                      print(f"{path}: tool without name"); ok = False; continue
+                  if n in names:
+                      print(f"{path}: duplicate tool '{n}' (also in {names[n]})"); ok = False
+                  else:
+                      names[n] = path
+              print(f"{path}: OK ({len(data.get('http_tools',[]))} tools)")
+          sys.exit(0 if ok else 1)
+          PY
+
+      - name: Validate IDENTITY.json
+        run: |
+          python - <<'PY'
+          import json
+          with open("workspace/IDENTITY.json") as f:
+              data = json.load(f)
+          required_sections = [
+              "identity","psychology","linguistics",
+              "motivations","capabilities","physicality","history","interests"
+          ]
+          missing = [s for s in required_sections if s not in data]
+          if missing:
+              print(f"IDENTITY.json missing sections: {missing}")
+              raise SystemExit(1)
+          print("IDENTITY.json: OK")
+          PY
+
+      - name: Reject committed .env
+        run: |
+          if [ -f .env ]; then
+            echo "::error::.env is committed — this is a secrets leak. Remove it."
+            exit 1
+          fi
+          echo ".env is correctly absent."

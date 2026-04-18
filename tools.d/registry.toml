@@ -1,0 +1,39 @@
+# Tool Registry Manifest
+# ─────────────────────────────────────────────────────────────────────────
+# Every .toml file in this directory (except this one) is merged into the
+# agent's config at startup by entrypoint.sh. Each fragment contributes one
+# or more [[http_tools]] entries.
+#
+# Groups below enable "progressive disclosure" — the agent asks for a group
+# by name and only those tools load into context, keeping the prompt small.
+# ─────────────────────────────────────────────────────────────────────────
+
+[registry]
+version = "1.0.0"
+schema_version = 1
+description = "Pioneer agent tool registry — declarative HTTP tools for ZeroClaw"
+
+# Define groups here. Ship empty; fill as you add fragments.
+#
+# Example:
+#   [registry.groups]
+#   kpi = { tools = ["kpi_summary", "kpi_stats"], description = "Analytics" }
+[registry.groups]
+
+# Startup health probes — entrypoint validates these before the agent is
+# declared ready. Leave empty if your agent has no required external deps.
+[registry.health]
+enabled = false
+timeout_secs = 5
+probe_urls = []
+
+# Remote sync — pull additional tools from a live admin API at startup.
+# Disabled by default; enable per deployment.
+[registry.sync]
+enabled = false
+url = ""
+auth_header = "X-Service-API-Key"
+auth_env = "ADMIN_API_KEY"
+# local-priority: git-tracked tools.d/ wins on name conflict
+# remote-priority: admin API wins (use with caution)
+merge_strategy = "local-priority"

@@ -1,0 +1,96 @@
+#!/bin/sh
+# ─── Pioneer Agent Entrypoint ──────────────────────────────────────────────
+# Two-phase tool loading:
+#   Phase 1 — merge git-tracked tools.d/*.toml fragments (always available)
+#   Phase 2 — optionally sync remote admin registry (runtime additions)
+#             with local-priority merge (git wins on name conflict)
+# ───────────────────────────────────────────────────────────────────────────
+set -e
+
+# Resolve writable zeroclaw home (prefer a persistent volume if mounted)
+ZEROCLAW_HOME="${ZEROCLAW_HOME:-/home/agent/.zeroclaw}"
+if [ -d /app/data/sessions ] && [ -w /app/data/sessions ]; then
+  ZEROCLAW_HOME="/app/data/sessions/.zeroclaw"
+  export HOME="/app/data/sessions"
+fi
+mkdir -p "$ZEROCLAW_HOME/workspace"
+
+# Locate the committed config (ConfigMap or baked-in)
+CONFIG_SRC=""
+[ -f /app/config/config.toml ] && CONFIG_SRC=/app/config/config.toml
+[ -z "$CONFIG_SRC" ] && CONFIG_SRC=/app/config.toml
+[ -z "$CONFIG_SRC" ] && { echo "[entrypoint] no config.toml found"; exit 1; }
+
+CONFIG="$ZEROCLAW_HOME/config.toml"
+cp "$CONFIG_SRC" "$CONFIG"
+
+# ── Phase 1: merge local tool fragments ───────────────────────────────────
+TOOLS_DIR="${TOOLS_DIR:-/app/tools.d}"
+echo "[registry] Phase 1: merging local tool fragments from $TOOLS_DIR"
+
+for f in "$TOOLS_DIR"/*.toml; do
+  [ -f "$f" ] || continue
+  case "$(basename "$f")" in registry.toml) continue ;; esac
+  {
+    echo ""
+    echo "# --- $(basename "$f") ---"
+    cat "$f"
+  } >> "$CONFIG"
+  echo "[registry]   + $(basename "$f")"
+done
+
+LOCAL_TOOL_COUNT=$(grep -c '^\[\[http_tools\]\]' "$CONFIG" 2>/dev/null || echo 0)
+echo "[registry] $LOCAL_TOOL_COUNT local tools loaded"
+
+# ── Phase 2: remote registry sync (optional) ──────────────────────────────
+SYNC_ENABLED=$(grep -A2 '\[registry\.sync\]' "$TOOLS_DIR/registry.toml" 2>/dev/null | grep 'enabled' | grep -o 'true' || echo "false")
+SYNC_URL=$(grep -A5 '\[registry\.sync\]' "$TOOLS_DIR/registry.toml" 2>/dev/null | grep 'url' | sed 's/.*= *"//;s/".*//' || echo "")
+SYNC_AUTH_ENV=$(grep -A5 '\[registry\.sync\]' "$TOOLS_DIR/registry.toml" 2>/dev/null | grep 'auth_env' | sed 's/.*= *"//;s/".*//' || echo "")
+SYNC_TOKEN=""
+[ -n "$SYNC_AUTH_ENV" ] && SYNC_TOKEN=$(eval "printf '%s' \"\$$SYNC_AUTH_ENV\"")
+
+if [ "$SYNC_ENABLED" = "true" ] && [ -n "$SYNC_URL" ] && [ -n "$SYNC_TOKEN" ]; then
+  echo "[registry] Phase 2: syncing remote registry from $SYNC_URL"
+  REMOTE_FILE="$ZEROCLAW_HOME/remote-tools.toml"
+  HTTP_CODE=$(curl -sf --max-time 10 \
+    -H "X-Service-API-Key: $SYNC_TOKEN" \
+    -o "$REMOTE_FILE" -w '%{http_code}' \
+    "${SYNC_URL}?format=toml" 2>/dev/null || echo "000")
+
+  if [ "$HTTP_CODE" = "200" ] && [ -s "$REMOTE_FILE" ]; then
+    LOCAL_NAMES=$(grep '^name = ' "$CONFIG" | sed 's/name = "//;s/"//' | sort -u)
+    ADDED=0; SKIP=false; BUFFER=""; CUR=""
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        "[[http_tools]]")
+          if [ -n "$CUR" ] && [ "$SKIP" = "false" ]; then
+            { echo ""; echo "# --- remote ---"; printf '%s\n' "$BUFFER"; } >> "$CONFIG"
+            ADDED=$((ADDED + 1))
+          fi
+          CUR=""; SKIP=false; BUFFER="[[http_tools]]" ;;
+        name\ =\ *)
+          CUR=$(echo "$line" | sed 's/name = "//;s/"//')
+          if echo "$LOCAL_NAMES" | grep -qx "$CUR"; then SKIP=true; fi
+          BUFFER="$BUFFER
+$line" ;;
+        *) BUFFER="$BUFFER
+$line" ;;
+      esac
+    done < "$REMOTE_FILE"
+    if [ -n "$CUR" ] && [ "$SKIP" = "false" ]; then
+      { echo ""; echo "# --- remote ---"; printf '%s\n' "$BUFFER"; } >> "$CONFIG"
+      ADDED=$((ADDED + 1))
+    fi
+    echo "[registry]   $ADDED remote tools merged (local-priority)"
+  else
+    echo "[registry]   WARN: remote sync failed (HTTP $HTTP_CODE), continuing with local only"
+  fi
+else
+  echo "[registry] Phase 2: remote sync disabled"
+fi
+
+TOTAL=$(grep -c '^\[\[http_tools\]\]' "$CONFIG" 2>/dev/null || echo 0)
+echo "[registry] ready — $TOTAL tools registered"
+
+# ── Launch zeroclaw ───────────────────────────────────────────────────────
+exec zeroclaw run --config "$CONFIG" "$@"

@@ -1,0 +1,106 @@
+# ─── Pioneer Agent Config ──────────────────────────────────────────────────
+# Edit to taste, then `cp config.toml.example config.toml` (the resolved
+# `config.toml` is gitignored — the .example is the committed source of truth).
+# ───────────────────────────────────────────────────────────────────────────
+
+default_provider = "custom:https://alpha.pioneers.dev/api/v1"
+default_model = "auto"
+default_temperature = 0.7
+
+# Pioneer wallet authentication — agent generates ETH wallet, auths to the
+# Pioneer server, caches JWT. No raw API keys needed.
+[pioneer_auth]
+enabled = true
+server_url = "https://alpha.pioneers.dev"
+refresh_margin_secs = 3600
+
+[observability]
+backend = "log"
+
+# Autonomy controls — tune these per deployment.
+[autonomy]
+level = "supervised"                    # supervised | assisted | autonomous
+workspace_only = false
+allowed_commands = [
+  "git", "ls", "cat", "grep", "find", "echo", "pwd", "wc", "head", "tail",
+  "date", "whoami", "uname", "which", "file", "mkdir", "cp", "mv", "rm",
+  "touch", "sed", "awk", "sort", "uniq", "tr", "cut", "tee", "xargs",
+  "curl", "jq", "node", "npm", "bun"
+]
+forbidden_paths = ["/etc/shadow", "/etc/passwd", "~/.ssh", "~/.gnupg", "~/.aws"]
+max_actions_per_hour = 100
+max_cost_per_day_cents = 2000
+require_approval_for_medium_risk = true
+block_high_risk_commands = true
+
+[runtime]
+kind = "native"
+
+[reliability]
+provider_retries = 3
+provider_backoff_ms = 1000
+fallback_providers = []
+channel_initial_backoff_secs = 2
+channel_max_backoff_secs = 60
+
+[heartbeat]
+enabled = true
+interval_minutes = 30
+
+[channels_config]
+cli = true
+
+[memory]
+backend = "sqlite"
+auto_save = true
+hygiene_enabled = true
+archive_after_days = 14
+purge_after_days = 90
+conversation_retention_days = 90
+embedding_provider = "none"
+
+[tunnel]
+provider = "none"
+
+[gateway]
+port = 18789
+host = "127.0.0.1"
+require_pairing = true
+allow_public_bind = false
+
+[secrets]
+encrypt = true
+
+[browser]
+enabled = false
+
+[http_request]
+enabled = true
+allowed_domains = []
+max_response_size = 1000000
+timeout_secs = 30
+
+# Identity — loaded from workspace/IDENTITY.json (AIEOS v1.1) by default.
+# Switch format = "openclaw" to use a markdown identity file instead.
+[identity]
+format = "aieos"
+aieos_path = "workspace/IDENTITY.json"
+
+# HTTP tools loaded from tools.d/ fragments at startup by entrypoint.sh.
+# See tools.d/registry.toml for groups and tools.d/README.md for authoring.
+
+[agents]
+# Named delegate agents — left empty; fill per deployment.
+
+[security.sandbox]
+backend = "auto"
+
+[security.resources]
+max_memory_mb = 512
+max_cpu_time_seconds = 60
+max_subprocesses = 10
+
+[security.audit]
+enabled = true
+log_path = "workspace/audit.log"
+max_size_mb = 100

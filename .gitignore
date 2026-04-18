@@ -1,0 +1,46 @@
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.secret
+*.key
+*.pem
+id_rsa*
+id_ed25519*
+
+# Runtime state (derivable, ephemeral)
+workspace/memory/
+workspace/state/
+workspace/cron/
+workspace/skills/*/state/
+workspace/db.sqlite*
+workspace/*.sqlite*
+workspace/*.db
+workspace/*.db-*
+workspace/audit.log
+
+# Resolved config (generated from config.toml.example at bootstrap)
+config.toml
+
+# Compiled / fetched binaries
+zeroclaw
+zeroclaw-*
+*.exe
+
+# Local build outputs
+data/
+dist/
+build/
+*.log
+
+# OS / editor junk
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# Pioneer runtime artifacts
+.pioneer/
+pioneer-agent/
