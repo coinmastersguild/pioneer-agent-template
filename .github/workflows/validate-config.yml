@@ -3,9 +3,10 @@ name: validate-config
 on:
   pull_request:
     paths:
-      - 'config.toml.example'
+      - 'config.toml'
       - 'tools.d/**'
       - 'workspace/IDENTITY.json'
+      - 'workspace/credentials.yaml'
       - '.env.example'
   push:
     branches: [main, master, develop]
@@ -16,19 +17,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install toml validator
-        run: pip install tomli tomli-w
+      - name: Install validators
+        run: pip install tomli pyyaml
 
-      - name: Validate config.toml.example
+      - name: Reject committed .env
+        run: |
+          if [ -f .env ]; then
+            echo "::error::.env is committed — this is a secrets leak. Remove it."
+            exit 1
+          fi
+          echo ".env is correctly absent."
+
+      - name: Validate config.toml
         run: |
           python - <<'PY'
-          import tomli, sys
-          with open("config.toml.example","rb") as f:
+          import tomli
+          with open("config.toml","rb") as f:
               tomli.load(f)
-          print("config.toml.example: OK")
+          print("config.toml: OK")
           PY
 
-      - name: Validate tools.d/*.toml
+      - name: Validate tools.d/*.toml + unique tool names
         run: |
           python - <<'PY'
           import tomli, glob, sys
@@ -49,27 +58,45 @@ jobs:
           sys.exit(0 if ok else 1)
           PY
 
-      - name: Validate IDENTITY.json
+      - name: Validate IDENTITY.json (AIEOS v1.1)
         run: |
           python - <<'PY'
           import json
           with open("workspace/IDENTITY.json") as f:
               data = json.load(f)
-          required_sections = [
-              "identity","psychology","linguistics",
-              "motivations","capabilities","physicality","history","interests"
-          ]
-          missing = [s for s in required_sections if s not in data]
+          required = ["identity","psychology","linguistics","motivations",
+                      "capabilities","physicality","history","interests"]
+          missing = [s for s in required if s not in data]
           if missing:
               print(f"IDENTITY.json missing sections: {missing}")
               raise SystemExit(1)
           print("IDENTITY.json: OK")
           PY
 
-      - name: Reject committed .env
+      - name: Validate credentials.yaml (if present)
         run: |
-          if [ -f .env ]; then
-            echo "::error::.env is committed — this is a secrets leak. Remove it."
-            exit 1
+          if [ ! -f workspace/credentials.yaml ]; then
+            echo "workspace/credentials.yaml not present — skipping (optional)"
+            exit 0
           fi
-          echo ".env is correctly absent."
+          python - <<'PY'
+          import yaml, sys
+          with open("workspace/credentials.yaml") as f:
+              data = yaml.safe_load(f) or {}
+          creds = data.get("credentials", [])
+          if not isinstance(creds, list):
+              print("credentials.yaml: 'credentials' must be a list"); sys.exit(1)
+          seen = set()
+          for c in creds:
+              for field in ("vault_key", "description"):
+                  if field not in c:
+                      print(f"credentials.yaml: entry missing '{field}': {c}"); sys.exit(1)
+              if c["vault_key"] in seen:
+                  print(f"credentials.yaml: duplicate vault_key '{c['vault_key']}'"); sys.exit(1)
+              seen.add(c["vault_key"])
+              forbidden = {"value", "secret", "token", "key"}
+              for f in forbidden & set(c.keys()):
+                  print(f"credentials.yaml: entry for '{c['vault_key']}' has forbidden field '{f}' — secrets must NOT appear here")
+                  sys.exit(1)
+          print(f"credentials.yaml: OK ({len(creds)} credential declarations)")
+          PY

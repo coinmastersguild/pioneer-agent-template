@@ -1,6 +1,7 @@
 # ─── Pioneer Agent Config ──────────────────────────────────────────────────
-# Edit to taste, then `cp config.toml.example config.toml` (the resolved
-# `config.toml` is gitignored — the .example is the committed source of truth).
+# Committed to your agent's repo. NO secrets go here — credentials are
+# resolved from the Pioneer Desktop vault at call time via the gateway.
+# Edit values below to suit your deployment.
 # ───────────────────────────────────────────────────────────────────────────
 
 default_provider = "custom:https://alpha.pioneers.dev/api/v1"

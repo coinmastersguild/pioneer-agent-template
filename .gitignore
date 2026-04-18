@@ -19,12 +19,9 @@ workspace/*.db
 workspace/*.db-*
 workspace/audit.log
 
-# Resolved config (generated from config.toml.example at bootstrap)
-config.toml
-
-# Compiled / fetched binaries
-zeroclaw
-zeroclaw-*
+# Compiled / fetched binaries (Docker build pulls these — never commit them)
+/zeroclaw
+/zeroclaw-*
 *.exe
 
 # Local build outputs

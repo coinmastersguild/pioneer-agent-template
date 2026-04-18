@@ -1,0 +1,29 @@
+# Pioneer Agent CODEOWNERS
+# ─────────────────────────────────────────────────────────────────────────
+# Replace @OWNER with your GitHub username (or team handle) during onboarding.
+# The Pioneer wizard does this automatically when generating a new agent
+# repo from the template.
+#
+# Goal: enforce the three-tier model from SOUL.md / MEMORY_POLICY.md.
+#   - Governed files: require owner review; block agent self-edits.
+#   - PR-gated files: open for agent proposals, owner merges.
+#   - Ephemeral files: gitignored, not visible to this system.
+# ─────────────────────────────────────────────────────────────────────────
+
+# Default — everything requires owner review.
+*                          @OWNER
+
+# Governance tier — owner ONLY. Agent-authored PRs touching these files
+# must be rejected at review.
+/workspace/SOUL.md            @OWNER
+/workspace/MEMORY_POLICY.md   @OWNER
+/.github/CODEOWNERS           @OWNER
+/.github/workflows/           @OWNER
+
+# PR-gated tier — agents may propose, owner merges. No special codeowners
+# beyond the default, but naming them keeps intent explicit.
+# /workspace/IDENTITY.json    @OWNER
+# /workspace/AGENT_BRIEFING.md @OWNER
+# /tools.d/                   @OWNER
+# /skills/                    @OWNER
+# /workspace/notes/           @OWNER
