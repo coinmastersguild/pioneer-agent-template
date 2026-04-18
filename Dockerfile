@@ -74,14 +74,21 @@ RUN groupadd -g 1001 agent && useradd -u 1001 -g agent -m agent
 # Pull the binary from whichever source stage was selected.
 COPY --from=${ZEROCLAW_SOURCE} /zeroclaw /usr/local/bin/zeroclaw
 
-RUN mkdir -p /app/workspace /app/config /app/tools.d && chown -R agent:agent /app
+RUN mkdir -p /app/workspace /app/config /app/tools.d /app/branding /app/ui && chown -R agent:agent /app
 
 WORKDIR /app
 
 COPY config.toml    /app/config/config.toml
 COPY tools.d/       /app/tools.d/
 COPY workspace/     /app/workspace/
+COPY branding/      /app/branding/
 COPY entrypoint.sh  /app/entrypoint.sh
+
+# Pioneer UI bundle — place a pre-built dist/ at ./ui/ in the agent repo root,
+# or leave empty to run headless (gateway still responds on /health + APIs).
+# The wizard populates this from the pinned pioneer-ui release.
+COPY ui/            /app/ui/
+
 RUN chmod +x /app/entrypoint.sh && chown -R agent:agent /app
 
 RUN mkdir -p /home/agent/.zeroclaw && \
@@ -90,6 +97,8 @@ RUN mkdir -p /home/agent/.zeroclaw && \
 
 USER agent
 ENV HOME=/home/agent
+ENV PIONEER_UI_DIR=/app/ui
+ENV PIONEER_BRANDING_DIR=/app/branding
 
 EXPOSE 18789
 

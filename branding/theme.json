@@ -1,0 +1,27 @@
+{
+  "$schema": "https://pioneers.dev/schema/agent-branding-v1.json",
+  "name": "Pioneer Agent",
+  "short_name": "Pioneer",
+  "tagline": "",
+  "mode": "dark",
+  "colors": {
+    "primary_400": "#4ade80",
+    "primary_500": "#22c55e",
+    "primary_600": "#16a34a",
+    "accent": "#4ade80",
+    "accent_hover": "#6ee7a0",
+    "bg": "#050a05",
+    "bg_surface": "#0a1a0a",
+    "bg_elevated": "#0f2a0f",
+    "border": "#1a3a1a",
+    "text": "#e6ffe6",
+    "text_muted": "#8fb98f",
+    "danger": "#ef4444",
+    "warn": "#facc15"
+  },
+  "assets": {
+    "logo": "/branding/logo.svg",
+    "favicon": "/branding/favicon.svg",
+    "avatar": "/branding/avatar.svg"
+  }
+}

@@ -29,6 +29,12 @@ Template repository for a Pioneer agent. Every Pioneer agent is backed by a priv
 │   └── notes/                   Long-term owner-reviewed memory (PR-gated)
 │       ├── findings/            Incident reports, security findings, audit conclusions
 │       └── patterns/            Distilled reusable knowledge
+├── branding/
+│   ├── theme.json               Per-agent colors, name, asset paths (CI-validated)
+│   ├── logo.svg                 Header logo
+│   ├── favicon.svg              Browser tab icon
+│   ├── avatar.svg               Portrait used in chat bubbles
+│   └── README.md                Schema + runtime-theming model
 ├── tools.d/
 │   ├── registry.toml            Tool groups, progressive disclosure, health checks
 │   └── README.md                How to add a new tool fragment

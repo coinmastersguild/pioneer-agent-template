@@ -7,6 +7,7 @@ on:
       - 'tools.d/**'
       - 'workspace/IDENTITY.json'
       - 'workspace/credentials.yaml'
+      - 'branding/**'
       - '.env.example'
   push:
     branches: [main, master, develop]
@@ -71,6 +72,36 @@ jobs:
               print(f"IDENTITY.json missing sections: {missing}")
               raise SystemExit(1)
           print("IDENTITY.json: OK")
+          PY
+
+      - name: Validate branding/theme.json (if present)
+        run: |
+          if [ ! -f branding/theme.json ]; then
+            echo "branding/theme.json not present — skipping (optional)"
+            exit 0
+          fi
+          python - <<'PY'
+          import json, re, sys
+          t = json.load(open("branding/theme.json"))
+          required = {"name","mode","colors","assets"}
+          missing = required - set(t.keys())
+          if missing:
+              print(f"theme.json missing top-level fields: {sorted(missing)}"); sys.exit(1)
+          if t["mode"] not in ("dark","light","system"):
+              print(f"theme.json: mode must be dark|light|system, got {t['mode']!r}"); sys.exit(1)
+          color_keys = ["primary_400","primary_500","primary_600","accent","accent_hover",
+                        "bg","bg_surface","bg_elevated","border","text","text_muted","danger","warn"]
+          hex_re = re.compile(r"^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$")
+          for k in color_keys:
+              v = t["colors"].get(k)
+              if not v or not hex_re.match(v):
+                  print(f"theme.json: colors.{k} must be #RRGGBB or #RRGGBBAA, got {v!r}")
+                  sys.exit(1)
+          for k in ("logo","favicon","avatar"):
+              p = t["assets"].get(k)
+              if not p or not isinstance(p, str) or not p.startswith("/branding/"):
+                  print(f"theme.json: assets.{k} must start with /branding/"); sys.exit(1)
+          print(f"theme.json: OK ({t['name']})")
           PY
 
       - name: Validate credentials.yaml (if present)
