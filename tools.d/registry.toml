@@ -6,6 +6,11 @@
 #
 # Groups below enable "progressive disclosure" — the agent asks for a group
 # by name and only those tools load into context, keeping the prompt small.
+#
+# Credentials for tool invocations are resolved at call time from the
+# Pioneer Desktop vault (via the gateway) — NOT from env vars baked into
+# this container. Tools declare which vault key they need; they do not
+# carry admin tokens themselves.
 # ─────────────────────────────────────────────────────────────────────────
 
 [registry]
@@ -17,7 +22,7 @@ description = "Pioneer agent tool registry — declarative HTTP tools for ZeroCl
 #
 # Example:
 #   [registry.groups]
-#   kpi = { tools = ["kpi_summary", "kpi_stats"], description = "Analytics" }
+#   reports = { tools = ["reports_summary"], description = "Reporting" }
 [registry.groups]
 
 # Startup health probes — entrypoint validates these before the agent is
@@ -26,14 +31,3 @@ description = "Pioneer agent tool registry — declarative HTTP tools for ZeroCl
 enabled = false
 timeout_secs = 5
 probe_urls = []
-
-# Remote sync — pull additional tools from a live admin API at startup.
-# Disabled by default; enable per deployment.
-[registry.sync]
-enabled = false
-url = ""
-auth_header = "X-Service-API-Key"
-auth_env = "ADMIN_API_KEY"
-# local-priority: git-tracked tools.d/ wins on name conflict
-# remote-priority: admin API wins (use with caution)
-merge_strategy = "local-priority"

@@ -34,7 +34,7 @@ Template repository for a Pioneer agent. Every Pioneer agent is backed by a priv
 │   ├── validate-config.yml      TOML + AIEOS schema validation on every PR
 │   └── review-pr.yml            Hook for agent-reviewed PRs (optional)
 ├── Dockerfile.example           Containerization starting point
-└── entrypoint.sh.example        Two-phase tool loading (local git → remote registry)
+└── entrypoint.sh.example        Merges tools.d/ fragments and launches zeroclaw
 ```
 
 ## Three self-modification tiers
