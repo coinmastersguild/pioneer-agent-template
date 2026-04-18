@@ -10,18 +10,18 @@ agent's config at startup. Split by domain (one file per logical tool group).
 
 ```toml
 [[http_tools]]
-name = "kpi_summary"
+name = "reports_summary"
 method = "GET"
-url = "http://keepkey-admin:3000/api/kpi/summary"
-description = "All KPIs in one call. Use this first when asked about metrics."
+url = "https://api.example.com/v1/reports/summary"
+description = "Return a compact summary of the last N days of activity. Use this first when the user asks about metrics."
 auth_header = "X-Service-API-Key"
-auth_env = "ADMIN_API_KEY"
+auth_env = "REPORTS_API_KEY"
 
 [[http_tools.params]]
 name = "range"
 in = "query"
 required = false
-description = "Time range: 24h | 7d | 30d | this-month | last-month | all"
+description = "Time range: 24h | 7d | 30d | all"
 default = "7d"
 ```
 
@@ -29,7 +29,7 @@ default = "7d"
 
 ```toml
 [registry.groups]
-analytics = { tools = ["kpi_summary"], description = "Metrics & KPIs" }
+reports = { tools = ["reports_summary"], description = "Activity & reporting" }
 ```
 
 4. Open a PR. Validation runs in CI (TOML lint + name uniqueness check). On
